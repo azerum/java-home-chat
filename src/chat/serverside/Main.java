@@ -1,6 +1,4 @@
-package chat;
-
-import chat.server.Server;
+package chat.serverside;
 
 import java.io.IOException;
 import java.util.Scanner;

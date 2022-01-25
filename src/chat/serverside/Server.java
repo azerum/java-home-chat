@@ -37,7 +37,7 @@ public class Server extends IoProcess {
                 Socket clientSocket = serverSocket.accept();
 
                 Client client = new Client(clientSocket, broadcaster);
-                trySpawnChild(client);
+                spawnChild(client);
             }
         }
         catch (IOException ignored) {}

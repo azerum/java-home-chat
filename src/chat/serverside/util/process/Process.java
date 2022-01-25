@@ -13,18 +13,10 @@ public abstract class Process {
     private final AtomicBoolean interrupted = new AtomicBoolean(false);
 
     @Nullable
-    private Process parent;
+    /*package-private*/ Process parent;
 
     @Nullable
-    private Runnable onStoppedItself = null;
-
-    public void setParent(Process parent) {
-        this.parent = parent;
-    }
-
-    public void setOnStoppedItself(Runnable onStoppedItself) {
-        this.onStoppedItself = onStoppedItself;
-    }
+    /*package-private*/ Runnable onStoppedItself = null;
 
     public final void interrupt() {
         if (interrupted.getAndSet(true)) {
@@ -47,38 +39,27 @@ public abstract class Process {
         }
     }
 
-    protected final void spawnChild(NonIoProcess child) {
+    protected final void spawnChild(Process child) {
         spawnChild(child, null);
     }
 
-    protected final void spawnChild(NonIoProcess child, Runnable onStoppedItself) {
-        child.setParent(this);
-        child.setOnStoppedItself(onStoppedItself);
+    protected final void spawnChild(Process child, Runnable onStoppedItself) {
+        child.parent = this;
+        child.onStoppedItself = onStoppedItself;
 
-        child.start();
+        if (child instanceof NonIoProcess nonIoProcess) {
+            nonIoProcess.start();
+        }
+        else if (child instanceof IoProcess ioProcess) {
+            try {
+                ioProcess.start();
+            }
+            catch (IOException ignored) {
+                return;
+            }
+        }
+
         children.add(child);
-    }
-
-    protected final boolean trySpawnChild(IoProcess child) {
-        return trySpawnChild(child, null);
-    }
-
-    protected final boolean trySpawnChild(
-        IoProcess child,
-        Runnable onStoppedItself
-    ) {
-        child.setParent(this);
-        child.setOnStoppedItself(onStoppedItself);
-
-        try {
-            child.start();
-
-            children.add(child);
-            return true;
-        }
-        catch (IOException ignored) {
-            return false;
-        }
     }
 
     private void removeChild(Process child) {

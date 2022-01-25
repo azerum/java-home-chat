@@ -104,7 +104,7 @@ public class Client extends IoProcess {
         }
 
         writer = new ClientWriter(out);
-        spawnChild(writer);
+        spawnChild(writer, this::onWriterStopped);
 
         return writer;
     }

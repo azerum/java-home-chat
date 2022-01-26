@@ -31,6 +31,14 @@ public class Server extends IoProcess {
         thread.start();
     }
 
+    @Override
+    protected void interruptSelf() {
+        try {
+            serverSocket.close();
+        }
+        catch (IOException ignored) {}
+    }
+
     private void acceptIncomingConnections() {
         try {
             while (true) {
@@ -43,13 +51,5 @@ public class Server extends IoProcess {
         catch (IOException ignored) {}
 
         onStopped();
-    }
-
-    @Override
-    protected void interruptSelf() {
-        try {
-            serverSocket.close();
-        }
-        catch (IOException ignored) {}
     }
 }

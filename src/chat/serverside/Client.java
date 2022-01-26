@@ -46,14 +46,15 @@ public class Client extends IoProcess {
     private void run() {
         nickname = readNicknameOrTimeout();
 
-        //Timeout - close connection with the client (it might be a DOS attack)
         if (nickname == null) {
+            resetConnection();
             return;
         }
 
         writer = spawnWriter();
 
         if (writer == null) {
+            onStopped();
             return;
         }
 
@@ -91,6 +92,14 @@ public class Client extends IoProcess {
         finally {
             executor.shutdown();
         }
+    }
+
+    private void resetConnection() {
+        try {
+            socket.setSoLinger(true, 0);
+            socket.close();
+        }
+        catch (IOException ignored) {}
     }
 
     private ClientWriter spawnWriter() {

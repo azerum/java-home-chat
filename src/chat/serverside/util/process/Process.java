@@ -5,12 +5,12 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class Process {
     private final Set<Process> children = ConcurrentHashMap.newKeySet();
 
-    private final AtomicBoolean interrupted = new AtomicBoolean(false);
+    private final Object stoppedLock = new Object();
+    private boolean stopped = false;
 
     @Nullable
     /*package-private*/ Process parent;
@@ -19,23 +19,40 @@ public abstract class Process {
     /*package-private*/ Runnable onStoppedItself = null;
 
     public final void interrupt() {
-        if (interrupted.getAndSet(true)) {
-            return;
-        }
-
-        children.forEach(Process::interrupt);
-        interruptSelf();
-
-        if (parent != null) {
-            parent.removeChild(this);
-        }
+        doIfNotStopped(() -> {
+            interruptChildrenAndDetachFromParent();
+            interruptSelf();
+        });
     }
 
     protected abstract void interruptSelf();
 
     protected final void onStopped() {
-        if (!interrupted.get() && onStoppedItself != null) {
-            onStoppedItself.run();
+        doIfNotStopped(() -> {
+            interruptChildrenAndDetachFromParent();
+
+            if (onStoppedItself != null) {
+                onStoppedItself.run();
+            }
+        });
+    }
+
+    private void doIfNotStopped(Runnable stopAction) {
+        synchronized (stoppedLock) {
+            if (stopped) {
+                return;
+            }
+
+            stopAction.run();
+            stopped = true;
+        }
+    }
+
+    private void interruptChildrenAndDetachFromParent() {
+        children.forEach(Process::interrupt);
+
+        if (parent != null) {
+            parent.removeChild(this);
         }
     }
 

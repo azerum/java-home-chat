@@ -1,42 +1,53 @@
 package chat.serverside;
 
-import chat.serverside.util.process.IoProcess;
+import chat.serverside.shared.BlockingMessageReader;
+import chat.serverside.shared.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Scanner;
 import java.util.concurrent.*;
 
-public class Client extends IoProcess {
-    private final int NICKNAME_READING_TIMEOUT = 10;
-    private final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
+public class Client {
+    private static final int NICKNAME_READING_TIMEOUT = 10;
+    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private final Socket socket;
     private final Broadcaster broadcaster;
 
     private Scanner scanner;
+    private OutputStream out;
 
-    private ClientWriter writer;
     private String nickname;
+    private MessageWriter writer;
+    private BlockingMessageReader reader;
+
+    @Nullable
+    public Runnable onStoppedItself;
 
     public Client(Socket socket, Broadcaster broadcaster) {
         this.socket = socket;
         this.broadcaster = broadcaster;
     }
 
-    @Override
     public void start() throws IOException {
         InputStream in = socket.getInputStream();
         scanner = new Scanner(in);
+
+        out = socket.getOutputStream();
 
         Thread readingThread = new Thread(this::run, "client");
         readingThread.start();
     }
 
-    @Override
-    protected void interruptSelf() {
+    public void stop() {
+        if (writer != null) writer.stop();
+        if (reader != null) reader.stop();
+
         try {
             socket.close();
         }
@@ -44,6 +55,11 @@ public class Client extends IoProcess {
     }
 
     private void run() {
+        doRun();
+        stop();
+    }
+
+    private void doRun() {
         nickname = readNicknameOrTimeout();
 
         if (nickname == null) {
@@ -51,22 +67,19 @@ public class Client extends IoProcess {
             return;
         }
 
-        writer = spawnWriter();
+        writer = new MessageWriter(out);
+        writer.onStoppedItself = this::onWriterStopped;
 
-        if (writer == null) {
-            onStopped();
-            return;
-        }
+        writer.start();
 
-        broadcaster.addClientWriter(writer);
+        broadcaster.addMessageWriter(writer);
         broadcast(nickname + " has joined the chat");
 
-        readMessages();
+        reader = new BlockingMessageReader(scanner, this::onMessageRead);
+        reader.start();
 
-        broadcaster.removeClientWriter(writer);
+        broadcaster.removeMessageWriter(writer);
         broadcast(nickname + " has left the chat");
-
-        onStopped();
     }
 
     private String readNicknameOrTimeout() {
@@ -97,36 +110,20 @@ public class Client extends IoProcess {
     private void resetConnection() {
         try {
             socket.setSoLinger(true, 0);
-            socket.close();
         }
-        catch (IOException ignored) {}
-    }
-
-    private ClientWriter spawnWriter() {
-        OutputStream out;
-
-        try {
-            out = socket.getOutputStream();
+        catch (SocketException e) {
+            System.err.println("Error setting SO_LINGER (resetting connection): ");
+            e.printStackTrace();
         }
-        catch (IOException ignored) {
-            return null;
-        }
-
-        writer = new ClientWriter(out);
-        spawnChild(writer, this::onWriterStopped);
-
-        return writer;
     }
 
     private void onWriterStopped() {
-        interruptSelf();
+        stop();
+        if (onStoppedItself != null) onStoppedItself.run();
     }
 
-    private void readMessages() {
-        while (scanner.hasNextLine()) {
-            String message = scanner.nextLine();
-            broadcast(nickname + ": " + message);
-        }
+    private void onMessageRead(String message) {
+        broadcast(nickname + ": " + message);
     }
 
     private void broadcast(String message) {

@@ -22,6 +22,6 @@ public class Main {
         System.out.println("Enter anything to stop the server");
 
         scanner.nextLine();
-        server.interrupt();
+        server.stop();
     }
 }

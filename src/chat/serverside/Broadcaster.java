@@ -1,39 +1,36 @@
 package chat.serverside;
 
-import chat.serverside.util.Threads;
-import chat.serverside.util.process.NonIoProcess;
+import chat.serverside.shared.MessageWriter;
+import chat.serverside.shared.Threads;
 
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Broadcaster extends NonIoProcess {
-    private record Broadcast(ClientWriter writerToSkip, String message) {}
+public class Broadcaster {
+    private record Broadcast(MessageWriter writerToSkip, String message) {}
 
     private final BlockingQueue<Broadcast> pendingBroadcasts =
         new LinkedBlockingQueue<>();
 
-    private final Set<ClientWriter> clientWriters =
+    private final Set<MessageWriter> messageWriters =
         ConcurrentHashMap.newKeySet();
 
     private Thread broadcastingThread;
 
-    @Override
     public void start() {
         broadcastingThread = new Thread(this::sendBroadcasts, "broadcaster");
         broadcastingThread.start();
     }
 
-    @Override
-    protected void interruptSelf() {
+    public void stop() {
         broadcastingThread.interrupt();
     }
 
-    public void broadcast(ClientWriter writerToSkip, String message) {
-        Threads.handleInterrupted(
-            () -> pendingBroadcasts.put( new Broadcast(writerToSkip, message) )
-        );
+    public void broadcast(MessageWriter writerToSkip, String message) {
+        Broadcast b = new Broadcast(writerToSkip, message);
+        Threads.handleInterrupted(() -> pendingBroadcasts.put(b));
     }
 
     private void sendBroadcasts() {
@@ -44,7 +41,7 @@ public class Broadcaster extends NonIoProcess {
                 //Duplicate messages to stdout for easier debugging
                 System.out.println(broadcast.message);
 
-                clientWriters.forEach(w -> {
+                messageWriters.forEach(w -> {
                     if (w != broadcast.writerToSkip) {
                         w.write(broadcast.message);
                     }
@@ -52,15 +49,13 @@ public class Broadcaster extends NonIoProcess {
             }
         }
         catch (InterruptedException ignored) {}
-
-        onStopped();
     }
 
-    public void addClientWriter(ClientWriter writer) {
-        clientWriters.add(writer);
+    public void addMessageWriter(MessageWriter writer) {
+        messageWriters.add(writer);
     }
 
-    public void removeClientWriter(ClientWriter writer) {
-        clientWriters.remove(writer);
+    public void removeMessageWriter(MessageWriter writer) {
+        messageWriters.remove(writer);
     }
 }

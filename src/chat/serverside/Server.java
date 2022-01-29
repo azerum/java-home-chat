@@ -1,13 +1,15 @@
 package chat.serverside;
 
-import chat.serverside.util.process.IoProcess;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class Server extends IoProcess {
+public class Server {
     private final int port;
+    private final Set<Client> clients = ConcurrentHashMap.newKeySet();
 
     private ServerSocket serverSocket;
     private Broadcaster broadcaster;
@@ -16,12 +18,11 @@ public class Server extends IoProcess {
         this.port = port;
     }
 
-    @Override
     public void start() throws IOException {
         serverSocket = new ServerSocket(port);
 
         broadcaster = new Broadcaster();
-        spawnChild(broadcaster);
+        broadcaster.start();
 
         Thread thread = new Thread(
             this::acceptIncomingConnections,
@@ -31,8 +32,10 @@ public class Server extends IoProcess {
         thread.start();
     }
 
-    @Override
-    protected void interruptSelf() {
+    public void stop() {
+        broadcaster.stop();
+        clients.forEach(Client::stop);
+
         try {
             serverSocket.close();
         }
@@ -40,16 +43,24 @@ public class Server extends IoProcess {
     }
 
     private void acceptIncomingConnections() {
-        try {
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
+        while (true) {
+            Socket clientSocket;
 
-                Client client = new Client(clientSocket, broadcaster);
-                spawnChild(client);
+            try {
+                clientSocket = serverSocket.accept();
             }
-        }
-        catch (IOException ignored) {}
+            catch (IOException e) {
+                return;
+            }
 
-        onStopped();
+            Client client = new Client(clientSocket, broadcaster);
+            client.onStoppedItself = () -> clients.remove(client);
+
+            try {
+                client.start();
+                clients.add(client);
+            }
+            catch (IOException ignored) {}
+        }
     }
 }

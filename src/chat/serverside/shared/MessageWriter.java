@@ -1,7 +1,6 @@
-package chat.serverside;
+package chat.serverside.shared;
 
-import chat.serverside.util.Threads;
-import chat.serverside.util.process.NonIoProcess;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -9,26 +8,27 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ClientWriter extends NonIoProcess {
+public class MessageWriter {
     private final BlockingQueue<String> messagesToWrite =
         new LinkedBlockingQueue<>();
 
     private final OutputStream out;
     private Thread writingThread;
 
-    public ClientWriter(OutputStream out) {
+    @Nullable
+    public Runnable onStoppedItself = null;
+
+    public MessageWriter(OutputStream out) {
         this.out = out;
     }
 
-    @Override
     public void start() {
-        writingThread = new Thread(this::writeMessages, "client-writer");
+        writingThread = new Thread(this::writeMessages, "message-writer");
         writingThread.start();
     }
 
-    @Override
-    protected void interruptSelf() {
-        writingThread.interrupt();
+    public void stop() {
+        if (writingThread != null) writingThread.interrupt();
     }
 
     public void write(String message) {
@@ -47,7 +47,7 @@ public class ClientWriter extends NonIoProcess {
                 }
 
                 if (writer.checkError()) {
-                    onStopped();
+                    if (onStoppedItself != null) onStoppedItself.run();
                     break;
                 }
 

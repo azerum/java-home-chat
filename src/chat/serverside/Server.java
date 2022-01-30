@@ -1,6 +1,6 @@
 package chat.serverside;
 
-import chat.shared.Stoppable;
+import chat.util.Stoppable;
 
 import java.io.IOException;
 import java.net.ServerSocket;

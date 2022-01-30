@@ -1,8 +1,7 @@
 package chat.serverside;
 
-import chat.shared.MessageWriter;
-import chat.shared.Stoppable;
-import chat.shared.Threads;
+import chat.util.Stoppable;
+import chat.util.Threads;
 
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;

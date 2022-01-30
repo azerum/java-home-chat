@@ -1,13 +1,9 @@
 package chat.serverside;
 
-import chat.shared.BlockingMessageReader;
-import chat.shared.MessageWriter;
-import chat.shared.Stoppable;
+import chat.util.Stoppable;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Scanner;
@@ -21,11 +17,9 @@ public class Client extends Stoppable {
     private final Broadcaster broadcaster;
 
     private Scanner scanner;
-    private OutputStream out;
-
     private String nickname;
+
     private MessageWriter writer;
-    private BlockingMessageReader reader;
 
     public Client(Socket socket, Broadcaster broadcaster) {
         this.socket = socket;
@@ -33,19 +27,16 @@ public class Client extends Stoppable {
     }
 
     public void start() throws IOException {
-        InputStream in = socket.getInputStream();
-        scanner = new Scanner(in);
+        scanner = new Scanner(socket.getInputStream());
+        writer = new MessageWriter(socket.getOutputStream());
 
-        out = socket.getOutputStream();
-
-        Thread readingThread = new Thread(this::run, "client");
-        readingThread.start();
+        Thread thread = new Thread(this::run, "client");
+        thread.start();
     }
 
     @Override
     protected void doStop() {
-        if (writer != null) writer.stop();
-        if (reader != null) reader.stop();
+        writer.stop();
 
         try {
             socket.close();
@@ -54,31 +45,8 @@ public class Client extends Stoppable {
     }
 
     private void run() {
-        doRun();
+        handleClient();
         stopSelf();
-    }
-
-    private void doRun() {
-        nickname = readNicknameOrTimeout();
-
-        if (nickname == null) {
-            resetConnection();
-            return;
-        }
-
-        writer = new MessageWriter(out);
-        writer.onStoppedItself = this::stopSelf;
-
-        writer.start();
-
-        broadcaster.addMessageWriter(writer);
-        broadcast(nickname + " has joined the chat");
-
-        reader = new BlockingMessageReader(scanner, this::onMessageRead);
-        reader.start();
-
-        broadcaster.removeMessageWriter(writer);
-        broadcast(nickname + " has left the chat");
     }
 
     private void stopSelf() {
@@ -86,6 +54,26 @@ public class Client extends Stoppable {
             stop();
             notifyStoppedItself();
         }
+    }
+
+    private void handleClient() {
+        nickname = readNicknameOrTimeout();
+
+        if (nickname == null) {
+            resetConnection();
+            return;
+        }
+
+        writer.onStoppedItself = this::stopSelf;
+        writer.start();
+
+        broadcaster.addMessageWriter(writer);
+        broadcaster.broadcast(writer, nickname + " has joined the chat");
+
+        readMessages();
+
+        broadcaster.removeMessageWriter(writer);
+        broadcaster.broadcast(writer, nickname + " has left the chat");
     }
 
     @Nullable
@@ -124,11 +112,10 @@ public class Client extends Stoppable {
         }
     }
 
-    private void onMessageRead(String message) {
-        broadcast(nickname + ": " + message);
-    }
-
-    private void broadcast(String message) {
-        broadcaster.broadcast(writer, message);
+    private void readMessages() {
+        while (scanner.hasNextLine()) {
+            String message = scanner.nextLine();
+            broadcaster.broadcast(writer, nickname + ": " + message);
+        }
     }
 }

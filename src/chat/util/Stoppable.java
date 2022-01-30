@@ -1,4 +1,4 @@
-package chat.shared;
+package chat.util;
 
 import org.jetbrains.annotations.Nullable;
 

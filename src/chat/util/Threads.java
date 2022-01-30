@@ -1,4 +1,4 @@
-package chat.shared;
+package chat.util;
 
 public class Threads {
     public interface InterruptibleAction {

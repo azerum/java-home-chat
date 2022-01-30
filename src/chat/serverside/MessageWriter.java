@@ -1,4 +1,7 @@
-package chat.shared;
+package chat.serverside;
+
+import chat.util.Stoppable;
+import chat.util.Threads;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -18,7 +21,7 @@ public class MessageWriter extends Stoppable {
     }
 
     public void start() {
-        writingThread = new Thread(this::writeMessages, "stream-writer");
+        writingThread = new Thread(this::writeMessages, "message-writer");
         writingThread.start();
     }
 

@@ -1,4 +1,4 @@
-package chat.serverside.shared;
+package chat.shared;
 
 public class Threads {
     public interface InterruptibleAction {
@@ -9,7 +9,7 @@ public class Threads {
         try {
             action.run();
         }
-        catch (InterruptedException ignored) {
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }

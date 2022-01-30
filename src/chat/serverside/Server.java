@@ -3,7 +3,6 @@ package chat.serverside;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,9 +32,6 @@ public class Server {
     }
 
     public void stop() {
-        broadcaster.stop();
-        clients.forEach(Client::stop);
-
         try {
             serverSocket.close();
         }
@@ -50,7 +46,7 @@ public class Server {
                 clientSocket = serverSocket.accept();
             }
             catch (IOException e) {
-                return;
+                break;
             }
 
             Client client = new Client(clientSocket, broadcaster);
@@ -62,5 +58,8 @@ public class Server {
             }
             catch (IOException ignored) {}
         }
+
+        broadcaster.stop();
+        clients.forEach(Client::stop);
     }
 }

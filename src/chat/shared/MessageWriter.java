@@ -1,4 +1,4 @@
-package chat.serverside.shared;
+package chat.shared;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -40,21 +40,26 @@ public class MessageWriter {
     private void writeMessages() {
         PrintWriter writer = new PrintWriter(out, false, StandardCharsets.UTF_8);
 
-        try {
-            while (true) {
-                if (Thread.currentThread().isInterrupted()) {
-                    break;
-                }
-
-                if (writer.checkError()) {
-                    if (onStoppedItself != null) onStoppedItself.run();
-                    break;
-                }
-
-                String message = messagesToWrite.take();
-                writer.println(message);
+        while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
             }
+
+            if (writer.checkError()) {
+                if (onStoppedItself != null) onStoppedItself.run();
+                break;
+            }
+
+            String message;
+
+            try {
+                message = messagesToWrite.take();
+            }
+            catch (InterruptedException e) {
+                break;
+            }
+
+            writer.println(message);
         }
-        catch (InterruptedException ignored) {}
     }
 }

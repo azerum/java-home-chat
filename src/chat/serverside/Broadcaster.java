@@ -1,7 +1,7 @@
 package chat.serverside;
 
-import chat.serverside.shared.MessageWriter;
-import chat.serverside.shared.Threads;
+import chat.shared.MessageWriter;
+import chat.shared.Threads;
 
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -34,21 +34,25 @@ public class Broadcaster {
     }
 
     private void sendBroadcasts() {
-        try {
-            while (!Thread.currentThread().isInterrupted()) {
-                Broadcast broadcast = pendingBroadcasts.take();
+        while (!Thread.currentThread().isInterrupted()) {
+            Broadcast broadcast;
 
-                //Duplicate messages to stdout for easier debugging
-                System.out.println(broadcast.message);
-
-                messageWriters.forEach(w -> {
-                    if (w != broadcast.writerToSkip) {
-                        w.write(broadcast.message);
-                    }
-                });
+            try {
+                broadcast = pendingBroadcasts.take();
             }
+            catch (InterruptedException e) {
+                break;
+            }
+
+            //Duplicate messages to stdout for easier debugging
+            System.out.println(broadcast.message);
+
+            messageWriters.forEach(w -> {
+                if (w != broadcast.writerToSkip) {
+                    w.write(broadcast.message);
+                }
+            });
         }
-        catch (InterruptedException ignored) {}
     }
 
     public void addMessageWriter(MessageWriter writer) {

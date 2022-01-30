@@ -1,7 +1,6 @@
 package chat.serverside;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -16,12 +15,12 @@ public class Main {
             return;
         }
 
-        Scanner scanner = new Scanner(System.in);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.print("\nStopping...");
+            server.stop();
+        }));
 
         System.out.println("Running on port " + port);
-        System.out.println("Enter anything to stop the server");
-
-        scanner.nextLine();
-        server.stop();
+        System.out.println("Use Ctrl + C to stop the server");
     }
 }

@@ -1,7 +1,7 @@
 package chat.serverside;
 
-import chat.serverside.shared.BlockingMessageReader;
-import chat.serverside.shared.MessageWriter;
+import chat.shared.BlockingMessageReader;
+import chat.shared.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class Client {
     private BlockingMessageReader reader;
 
     @Nullable
-    public Runnable onStoppedItself;
+    public Runnable onStoppedItself = null;
 
     public Client(Socket socket, Broadcaster broadcaster) {
         this.socket = socket;

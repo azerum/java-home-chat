@@ -1,8 +1,7 @@
-package chat.serverside.shared;
+package chat.shared;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.io.InputStream;
 import java.util.Scanner;
 import java.util.function.Consumer;
 
@@ -33,7 +32,7 @@ public class BlockingMessageReader {
                 onMessageRead.accept(message);
             }
         }
-        catch (IllegalStateException ignored) {
+        catch (IllegalStateException e) {
             return;
         }
 

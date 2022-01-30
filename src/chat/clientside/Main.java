@@ -16,7 +16,10 @@ public class Main {
         System.out.print("Enter port: ");
 
         final int port = scanner.nextInt();
-        scanner.nextLine(); //Read left-over newline character
+
+        //scanner.nextInt() оставляет за собой недочитанный символ
+        //новой строки - дочитываем его
+        scanner.nextLine();
 
         System.out.print("Enter your nickname: ");
         final String nickname = scanner.nextLine();

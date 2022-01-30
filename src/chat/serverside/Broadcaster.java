@@ -45,7 +45,7 @@ public class Broadcaster extends Stoppable {
                 break;
             }
 
-            //Duplicate messages to stdout for easier debugging
+            //Дублируем все сообщения в консоль для облегчения отладки
             System.out.println(broadcast.message);
 
             messageWriters.forEach(w -> {

@@ -53,7 +53,7 @@ public class Server extends Stoppable {
             }
 
             Client client = new Client(clientSocket, broadcaster);
-            client.handleOnStoppedItself(() -> clients.remove(client));
+            client.setOnStoppedItself(() -> clients.remove(client));
 
             try {
                 client.start();

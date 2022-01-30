@@ -28,8 +28,6 @@ public class ChatSession extends Stoppable {
         Scanner scanner = new Scanner(in);
         PrintWriter writer = new PrintWriter(out, false, StandardCharsets.UTF_8);
 
-        writer.println(nickname);
-
         receivingThread = new Thread(() -> receiveMessages(scanner), "receiver");
 
         receivingThread.start();
@@ -59,6 +57,8 @@ public class ChatSession extends Stoppable {
     }
 
     private void sendMessages(PrintWriter writer) {
+        writer.println(nickname);
+
         Scanner scanner = new Scanner(System.in);
 
         while (true) {

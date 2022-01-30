@@ -64,7 +64,7 @@ public class Client extends Stoppable {
             return;
         }
 
-        writer.handleOnStoppedItself(this::stopSelf);
+        writer.setOnStoppedItself(this::stopSelf);
         writer.start();
 
         broadcaster.addMessageWriter(writer);
@@ -86,11 +86,14 @@ public class Client extends Stoppable {
             return readNickname.get(NICKNAME_READING_TIMEOUT, TIMEOUT_UNIT);
         }
         catch (TimeoutException | ExecutionException e) {
-            //Nickname reading timed out or scanner.nextLine() has
-            //failed because of socket problem
+            //Истекло время ожидания сообщения с никнеймом, или
+            //scanner.nextLine() выбросил исключение из-за
+            //проблем с сокетом
             return null;
         }
         catch (InterruptedException | CancellationException e) {
+            //Этих исключений никогда не должно произойти
+
             System.err.println("Should not happen:");
             e.printStackTrace();
             assert false;

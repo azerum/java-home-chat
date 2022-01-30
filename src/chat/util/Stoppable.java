@@ -10,8 +10,8 @@ public abstract class Stoppable {
     @Nullable
     private Runnable onStoppedItself = null;
 
-    public void handleOnStoppedItself(@Nullable Runnable handler) {
-        onStoppedItself = handler;
+    public void setOnStoppedItself(@Nullable Runnable action) {
+        onStoppedItself = action;
     }
 
     protected final void notifyStoppedItself() {

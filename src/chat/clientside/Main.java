@@ -8,20 +8,18 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.print("Enter chat room host: ");
+        System.out.println("Connecting to a chat room...");
+
+        System.out.print("Enter host: ");
         final String host = scanner.nextLine();
 
-        System.out.println();
+        System.out.print("Enter port: ");
 
-        System.out.print("Enter chat room port: ");
         final int port = scanner.nextInt();
-
-        System.out.println();
+        scanner.nextLine(); //Read left-over newline character
 
         System.out.print("Enter your nickname: ");
         final String nickname = scanner.nextLine();
-
-        System.out.println();
 
         Socket socket;
 
@@ -31,10 +29,19 @@ public class Main {
         catch (IOException e) {
             System.out.println("Failed to connect to the chat room: ");
             e.printStackTrace();
-
             return;
         }
 
+        ChatSession session = new ChatSession(socket, nickname);
 
+        try {
+            session.start();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        Runtime.getRuntime().addShutdownHook( new Thread(session::stop) );
     }
 }

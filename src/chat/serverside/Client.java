@@ -64,7 +64,7 @@ public class Client extends Stoppable {
             return;
         }
 
-        writer.onStoppedItself = this::stopSelf;
+        writer.handleOnStoppedItself(this::stopSelf);
         writer.start();
 
         broadcaster.addMessageWriter(writer);

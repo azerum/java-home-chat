@@ -8,7 +8,15 @@ public abstract class Stoppable {
     private final AtomicBoolean stopped = new AtomicBoolean(false);
 
     @Nullable
-    public Runnable onStoppedItself = null;
+    private Runnable onStoppedItself = null;
+
+    public void handleOnStoppedItself(@Nullable Runnable handler) {
+        onStoppedItself = handler;
+    }
+
+    protected final void notifyStoppedItself() {
+        if (onStoppedItself != null) onStoppedItself.run();
+    }
 
     public boolean isStopped() {
         return stopped.get();
@@ -21,8 +29,4 @@ public abstract class Stoppable {
     }
 
     protected abstract void doStop();
-
-    protected final void notifyStoppedItself() {
-        if (onStoppedItself != null) onStoppedItself.run();
-    }
 }

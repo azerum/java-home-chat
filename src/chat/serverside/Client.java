@@ -2,6 +2,7 @@ package chat.serverside;
 
 import chat.shared.BlockingMessageReader;
 import chat.shared.MessageWriter;
+import chat.shared.Stoppable;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.net.SocketException;
 import java.util.Scanner;
 import java.util.concurrent.*;
 
-public class Client {
+public class Client extends Stoppable {
     private static final int NICKNAME_READING_TIMEOUT = 10;
     private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
 
@@ -25,9 +26,6 @@ public class Client {
     private String nickname;
     private MessageWriter writer;
     private BlockingMessageReader reader;
-
-    @Nullable
-    public Runnable onStoppedItself = null;
 
     public Client(Socket socket, Broadcaster broadcaster) {
         this.socket = socket;
@@ -44,7 +42,8 @@ public class Client {
         readingThread.start();
     }
 
-    public void stop() {
+    @Override
+    protected void doStop() {
         if (writer != null) writer.stop();
         if (reader != null) reader.stop();
 
@@ -56,7 +55,7 @@ public class Client {
 
     private void run() {
         doRun();
-        stop();
+        stopSelf();
     }
 
     private void doRun() {
@@ -68,7 +67,7 @@ public class Client {
         }
 
         writer = new MessageWriter(out);
-        writer.onStoppedItself = this::onWriterStopped;
+        writer.onStoppedItself = this::stopSelf;
 
         writer.start();
 
@@ -82,6 +81,14 @@ public class Client {
         broadcast(nickname + " has left the chat");
     }
 
+    private void stopSelf() {
+        if (!isStopped()) {
+            stop();
+            notifyStoppedItself();
+        }
+    }
+
+    @Nullable
     private String readNicknameOrTimeout() {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -115,11 +122,6 @@ public class Client {
             System.err.println("Error setting SO_LINGER (resetting connection): ");
             e.printStackTrace();
         }
-    }
-
-    private void onWriterStopped() {
-        stop();
-        if (onStoppedItself != null) onStoppedItself.run();
     }
 
     private void onMessageRead(String message) {

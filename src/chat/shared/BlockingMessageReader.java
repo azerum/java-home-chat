@@ -1,16 +1,11 @@
 package chat.shared;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Scanner;
 import java.util.function.Consumer;
 
-public class BlockingMessageReader {
+public class BlockingMessageReader extends Stoppable {
     private final Scanner scanner;
     private final Consumer<String> onMessageRead;
-
-    @Nullable
-    public Runnable onStoppedItself = null;
 
     public BlockingMessageReader(Scanner scanner, Consumer<String> onMessageRead) {
         this.scanner = scanner;
@@ -21,7 +16,8 @@ public class BlockingMessageReader {
         readMessages();
     }
 
-    public void stop() {
+    @Override
+    protected void doStop() {
         scanner.close();
     }
 
@@ -36,6 +32,6 @@ public class BlockingMessageReader {
             return;
         }
 
-        if (onStoppedItself != null) onStoppedItself.run();
+        notifyStoppedItself();
     }
 }

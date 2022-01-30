@@ -1,6 +1,7 @@
 package chat.serverside;
 
 import chat.shared.MessageWriter;
+import chat.shared.Stoppable;
 import chat.shared.Threads;
 
 import java.util.Set;
@@ -8,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Broadcaster {
+public class Broadcaster extends Stoppable {
     private record Broadcast(MessageWriter writerToSkip, String message) {}
 
     private final BlockingQueue<Broadcast> pendingBroadcasts =
@@ -24,8 +25,9 @@ public class Broadcaster {
         broadcastingThread.start();
     }
 
-    public void stop() {
-        broadcastingThread.interrupt();
+    @Override
+    protected void doStop() {
+        if (broadcastingThread != null) broadcastingThread.interrupt();
     }
 
     public void broadcast(MessageWriter writerToSkip, String message) {

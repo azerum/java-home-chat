@@ -1,33 +1,29 @@
 package chat.shared;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class MessageWriter {
+public class MessageWriter extends Stoppable {
     private final BlockingQueue<String> messagesToWrite =
         new LinkedBlockingQueue<>();
 
     private final OutputStream out;
     private Thread writingThread;
 
-    @Nullable
-    public Runnable onStoppedItself = null;
-
     public MessageWriter(OutputStream out) {
         this.out = out;
     }
 
     public void start() {
-        writingThread = new Thread(this::writeMessages, "message-writer");
+        writingThread = new Thread(this::writeMessages, "stream-writer");
         writingThread.start();
     }
 
-    public void stop() {
+    @Override
+    protected void doStop() {
         if (writingThread != null) writingThread.interrupt();
     }
 
@@ -46,7 +42,7 @@ public class MessageWriter {
             }
 
             if (writer.checkError()) {
-                if (onStoppedItself != null) onStoppedItself.run();
+                notifyStoppedItself();
                 break;
             }
 

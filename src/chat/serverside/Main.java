@@ -16,7 +16,7 @@ public class Main {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.print("\nStopping...");
+            System.out.println("\nStopping...");
             server.stop();
         }));
 

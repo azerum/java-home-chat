@@ -1,12 +1,14 @@
 package chat.serverside;
 
+import chat.shared.Stoppable;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Server {
+public class Server extends Stoppable {
     private final int port;
     private final Set<Client> clients = ConcurrentHashMap.newKeySet();
 
@@ -31,7 +33,8 @@ public class Server {
         thread.start();
     }
 
-    public void stop() {
+    @Override
+    protected void doStop() {
         try {
             serverSocket.close();
         }
